@@ -34,13 +34,14 @@ import (
 	"github.com/ktsakalozos/lxdlet/lxdlet/util"
 )
 
+// LxdRuntime exposed all the runtime methods
 type LxdRuntime struct {
 	imageStore  runtimeApi.ImageServiceServer
 	lxdDataPath string
 }
 
 const internalAppPrefix = "lxdletinternal-"
-const sandboxes_path = "/var/tmp/lxdlet/sandboxes"
+const sandboxesPath = "/var/tmp/lxdlet/sandboxes"
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
@@ -52,13 +53,13 @@ func randString(n int) string {
 	return string(b)
 }
 
-// New creates a new RuntimeServiceServer backed by lxd
+// NewLxdRuntimeService creates a new RuntimeServiceServer backed by lxd
 func NewLxdRuntimeService() runtimeApi.RuntimeServiceServer {
 	rand.Seed(time.Now().UnixNano())
-	_ = os.MkdirAll(sandboxes_path, os.ModePerm)
+	_ = os.MkdirAll(sandboxesPath, os.ModePerm)
 	runtime := &LxdRuntime{
 		imageStore:  nil,
-		lxdDataPath: sandboxes_path,
+		lxdDataPath: sandboxesPath,
 	}
 
 	streamConfig := streaming.DefaultConfig
@@ -79,6 +80,7 @@ func translateState(lxdState string) runtimeApi.ContainerState {
 	return runtimeApi.ContainerState_CONTAINER_UNKNOWN
 }
 
+// Version returns the version of lxd and lxdlet
 func (r *LxdRuntime) Version(ctx context.Context, req *runtimeApi.VersionRequest) (*runtimeApi.VersionResponse, error) {
 	glog.Infof("*********** Version ")
 	name := "lxd"
@@ -100,6 +102,7 @@ func (r *LxdRuntime) Version(ctx context.Context, req *runtimeApi.VersionRequest
 	}, nil
 }
 
+// ListContainers lists all running containers
 func (r *LxdRuntime) ListContainers(ctx context.Context, req *runtimeApi.ListContainersRequest) (*runtimeApi.ListContainersResponse, error) {
 	// We assume the containers in data dir are all managed by kubelet.
 	glog.V(6).Infof("*********** ListContainers ")
@@ -141,6 +144,7 @@ func (r *LxdRuntime) ListContainers(ctx context.Context, req *runtimeApi.ListCon
 	return &runtimeApi.ListContainersResponse{Containers: containers}, nil
 }
 
+// ContainerStatus return the container status
 func (r *LxdRuntime) ContainerStatus(ctx context.Context, req *runtimeApi.ContainerStatusRequest) (*runtimeApi.ContainerStatusResponse, error) {
 	// Container ID is in the form of "uuid:appName".
 	glog.V(6).Infof("*********** ContainerStatus : ", req.ContainerId)
@@ -174,6 +178,7 @@ func (r *LxdRuntime) ContainerStatus(ctx context.Context, req *runtimeApi.Contai
 	return &runtimeApi.ContainerStatusResponse{Status: nil}, nil
 }
 
+// CreateContainer create a container
 func (r *LxdRuntime) CreateContainer(ctx context.Context, req *runtimeApi.CreateContainerRequest) (*runtimeApi.CreateContainerResponse, error) {
 	imageID := req.GetConfig().GetImage().Image
 
@@ -196,6 +201,7 @@ func (r *LxdRuntime) CreateContainer(ctx context.Context, req *runtimeApi.Create
 	return &runtimeApi.CreateContainerResponse{ContainerId: ""}, nil
 }
 
+// StartContainer starts a container
 func (r *LxdRuntime) StartContainer(ctx context.Context, req *runtimeApi.StartContainerRequest) (*runtimeApi.StartContainerResponse, error) {
 	// Container ID is in the form of "uuid:appName".
 	glog.V(6).Infof("*********** StartContainer contained id: ", req.ContainerId)
@@ -212,6 +218,7 @@ func (r *LxdRuntime) StartContainer(ctx context.Context, req *runtimeApi.StartCo
 	return &runtimeApi.StartContainerResponse{}, nil
 }
 
+// StopContainer stops a container
 func (r *LxdRuntime) StopContainer(ctx context.Context, req *runtimeApi.StopContainerRequest) (*runtimeApi.StopContainerResponse, error) {
 	// Container ID is in the form of "uuid:appName".
 	glog.V(6).Infof("*********** StopContainer contained id: ", req.ContainerId)
@@ -229,6 +236,7 @@ func (r *LxdRuntime) StopContainer(ctx context.Context, req *runtimeApi.StopCont
 	return &runtimeApi.StopContainerResponse{}, nil
 }
 
+// RemoveContainer removes the container
 func (r *LxdRuntime) RemoveContainer(ctx context.Context, req *runtimeApi.RemoveContainerRequest) (*runtimeApi.RemoveContainerResponse, error) {
 	// Container ID is in the form of "uuid:appName".
 	glog.V(6).Infof("*********** RemoveContainer contained id: ", req.ContainerId)
@@ -247,11 +255,13 @@ func (r *LxdRuntime) RemoveContainer(ctx context.Context, req *runtimeApi.Remove
 	return &runtimeApi.RemoveContainerResponse{}, nil
 }
 
+// UpdateRuntimeConfig updates the runtime config
 func (r *LxdRuntime) UpdateRuntimeConfig(ctx context.Context, req *runtimeApi.UpdateRuntimeConfigRequest) (*runtimeApi.UpdateRuntimeConfigResponse, error) {
 	// TODO, use the PodCIDR passed in once we have network plugins setup
 	return &runtimeApi.UpdateRuntimeConfigResponse{}, nil
 }
 
+// Status returns the status of a container
 func (r *LxdRuntime) Status(ctx context.Context, req *runtimeApi.StatusRequest) (*runtimeApi.StatusResponse, error) {
 	// TODO: implement
 
@@ -280,18 +290,22 @@ func (r *LxdRuntime) Status(ctx context.Context, req *runtimeApi.StatusRequest) 
 	return &resp, nil
 }
 
+// Attach does something
 func (r *LxdRuntime) Attach(ctx context.Context, req *runtimeApi.AttachRequest) (*runtimeApi.AttachResponse, error) {
 	return nil, nil
 }
 
+// Exec does something
 func (r *LxdRuntime) Exec(ctx context.Context, req *runtimeApi.ExecRequest) (*runtimeApi.ExecResponse, error) {
 	return nil, nil
 }
 
+// ExecSync does something
 func (r *LxdRuntime) ExecSync(ctx context.Context, req *runtimeApi.ExecSyncRequest) (*runtimeApi.ExecSyncResponse, error) {
 	return nil, nil
 }
 
+// PortForward does something
 func (r *LxdRuntime) PortForward(ctx context.Context, req *runtimeApi.PortForwardRequest) (*runtimeApi.PortForwardResponse, error) {
 	return nil, nil
 }

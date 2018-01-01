@@ -1,6 +1,11 @@
 # lxdlet
 Lxd for Kubernetes. This project is under development.
 
+lxdlet implements the [Container Runtime Interface, CRI]([https://github.com/kubernetes/community/blob/master/contributors/devel/container-runtime-interface.md)
+Other implementations of this interface serve as a great resource. [Rktlet](https://github.com/kubernetes-incubator/rktlet) in particular
+served as a guideline for this project.
+
+
 ## Setup your development environment
 This project uses go 1.9.
 
@@ -31,4 +36,6 @@ go build -o lxdlet  $GOPATH/src/github.com/ktsakalozos/lxdlet/lxdlet/cmd/server/
 ```
 
 # Resources
-Golang on Ubuntu: https://github.com/golang/go/wiki/Ubuntu
+- Golang on Ubuntu: https://github.com/golang/go/wiki/Ubuntu
+- Container Runtime Interface, CRI: https://github.com/kubernetes/community/blob/master/contributors/devel/container-runtime-interface.md
+- Rktlet: https://github.com/kubernetes-incubator/rktlet
