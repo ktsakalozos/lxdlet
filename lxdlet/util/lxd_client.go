@@ -17,14 +17,15 @@ limitations under the License.
 package util
 
 import (
-	"github.com/lxc/lxd/client"
 	"fmt"
+
+	"github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
 )
 
 type lxdDaemon struct {
-	s    lxd.ContainerServer
-	path string
+	s            lxd.ContainerServer
+	path         string
 	images       []api.Image
 	networks     []api.Network
 	storagePools []api.StoragePool
@@ -61,6 +62,34 @@ func (d *lxdDaemon) GetContainers() ([]api.Container, error) {
 	return containers, nil
 }
 
+func (d *lxdDaemon) CreateContainer(name string, wait bool) (*lxd.Operation, error) {
+	// Container creation request
+	req := api.ContainersPost{
+		Name: name,
+		Source: api.ContainerSource{
+			Type:     "image",
+			Alias:    "ubuntu/xenial",
+			Server:   "https://images.linuxcontainers.org",
+			Protocol: "simplestreams",
+		},
+	}
+
+	// Get LXD to create the container (background operation)
+	op, err := d.s.CreateContainer(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if wait {
+		err = op.Wait()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return op, nil
+}
+
 func (d *lxdDaemon) GetContainer(name string) (*api.Container, error) {
 	// Containers
 	container, _, err := d.s.GetContainer(name)
@@ -71,3 +100,61 @@ func (d *lxdDaemon) GetContainer(name string) (*api.Container, error) {
 	return container, nil
 }
 
+func (d *lxdDaemon) StartContainer(name string, wait bool) (*lxd.Operation, error) {
+	reqState := api.ContainerStatePut{
+		Action:  "start",
+		Timeout: -1,
+	}
+
+	op, err := d.s.UpdateContainerState(name, reqState, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if wait {
+		err = op.Wait()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return op, nil
+}
+
+func (d *lxdDaemon) StopContainer(name string, wait bool) (*lxd.Operation, error) {
+	reqState := api.ContainerStatePut{
+		Action:  "stop",
+		Timeout: -1,
+		Force:   true,
+	}
+
+	op, err := d.s.UpdateContainerState(name, reqState, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if wait {
+		err = op.Wait()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return op, nil
+}
+
+func (d *lxdDaemon) DeleteContainer(name string, wait bool) (*lxd.Operation, error) {
+	op, err := d.s.DeleteContainer(name)
+	if err != nil {
+		return nil, err
+	}
+
+	if wait {
+		err = op.Wait()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return op, nil
+}

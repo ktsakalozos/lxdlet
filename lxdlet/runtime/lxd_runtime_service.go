@@ -73,10 +73,16 @@ func NewLxdRuntimeService() runtimeApi.RuntimeServiceServer {
 }
 
 func translateState(lxdState string) runtimeApi.ContainerState {
-	if lxdState == "RUNNING" {
+	if lxdState == "Running" {
 		return runtimeApi.ContainerState_CONTAINER_RUNNING
 	}
-
+	if lxdState == "Stopped" || lxdState == "Stopping" || lxdState == "Starting" || lxdState == "Started" {
+		return runtimeApi.ContainerState_CONTAINER_CREATED
+	}
+	if lxdState == "Cancelling" || lxdState == "Aborting" || lxdState == "Freezing" || lxdState == "Frozen" {
+		return runtimeApi.ContainerState_CONTAINER_EXITED
+	}
+	// Pending, Thawed, Error
 	return runtimeApi.ContainerState_CONTAINER_UNKNOWN
 }
 
@@ -148,73 +154,52 @@ func (r *LxdRuntime) ListContainers(ctx context.Context, req *runtimeApi.ListCon
 func (r *LxdRuntime) ContainerStatus(ctx context.Context, req *runtimeApi.ContainerStatusRequest) (*runtimeApi.ContainerStatusResponse, error) {
 	// Container ID is in the form of "uuid:appName".
 	glog.V(6).Infof("*********** ContainerStatus : ", req.ContainerId)
-	/*	uuid, appName, err := parseContainerID(req.ContainerId)
-		if err != nil {
-			return nil, err
-		}
+	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
+	if err != nil {
+		return nil, err
+	}
 
-		// TODO(kjackal): decipher this
-		resp, err := r.RunCommand("app", "status", uuid, "--app="+appName, "--format=json")
-		if err != nil {
-			return nil, err
-		}
+	// Assume containerID is the name of the container
+	container, err := lxdClient.GetContainer(req.ContainerId)
+	if err != nil {
+		return nil, err
+	}
 
-		if len(resp) != 1 {
-			return nil, fmt.Errorf("unexpected result %q", resp)
-		}
-	*/
-	/*
-		var app rkt.App
-		if err := json.Unmarshal([]byte(resp[0]), &app); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal container: %v", err)
-		}
-
-		status, err := toContainerStatus(uuid, &app)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert to container status: %v", err)
-		}
-	*/
-	//return &runtimeApi.ContainerStatusResponse{Status: status}, nil
-	return &runtimeApi.ContainerStatusResponse{Status: nil}, nil
+	var status runtimeApi.ContainerStatus
+	status.Id = req.ContainerId
+	status.State = translateState(container.Status)
+	return &runtimeApi.ContainerStatusResponse{Status: &status}, nil
 }
 
 // CreateContainer create a container
 func (r *LxdRuntime) CreateContainer(ctx context.Context, req *runtimeApi.CreateContainerRequest) (*runtimeApi.CreateContainerResponse, error) {
 	imageID := req.GetConfig().GetImage().Image
-
 	glog.V(6).Infof("*********** CreateContainer called with image: ", imageID)
+	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
+	if err != nil {
+		return nil, err
+	}
 
-	// TODO(kjackal): decipher this
-	/*	command, err := generateAppAddCommand(req, imageID)
-		if err != nil {
-			return nil, err
-		}
-		if _, err := r.RunCommand(command[0], command[1:]...); err != nil {
-			return nil, err
-		}
-
-		appName := buildAppName(req.Config.Metadata.Attempt, req.Config.Metadata.Name)
-		containerID := buildContainerID(req.PodSandboxId, appName)
-
-		return &runtimeApi.CreateContainerResponse{ContainerId: containerID}, nil
-	*/
-	return &runtimeApi.CreateContainerResponse{ContainerId: ""}, nil
+	_, err = lxdClient.CreateContainer(req.PodSandboxId, true)
+	if err != nil {
+		return nil, err
+	}
+	return &runtimeApi.CreateContainerResponse{ContainerId: req.PodSandboxId}, nil
 }
 
 // StartContainer starts a container
 func (r *LxdRuntime) StartContainer(ctx context.Context, req *runtimeApi.StartContainerRequest) (*runtimeApi.StartContainerResponse, error) {
 	// Container ID is in the form of "uuid:appName".
 	glog.V(6).Infof("*********** StartContainer contained id: ", req.ContainerId)
-	/*	uuid, appName, err := parseContainerID(req.ContainerId)
-		if err != nil {
-			return nil, err
-		}
+	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
+	if err != nil {
+		return nil, err
+	}
 
-		// TODO(kjackal): decipher this
-		if _, err := r.RunCommand("app", "start", uuid, "--app="+appName); err != nil {
-			return nil, err
-		}
-	*/
+	_, err = lxdClient.StartContainer(req.ContainerId, true)
+	if err != nil {
+		return nil, err
+	}
 	return &runtimeApi.StartContainerResponse{}, nil
 }
 
@@ -222,17 +207,16 @@ func (r *LxdRuntime) StartContainer(ctx context.Context, req *runtimeApi.StartCo
 func (r *LxdRuntime) StopContainer(ctx context.Context, req *runtimeApi.StopContainerRequest) (*runtimeApi.StopContainerResponse, error) {
 	// Container ID is in the form of "uuid:appName".
 	glog.V(6).Infof("*********** StopContainer contained id: ", req.ContainerId)
-	/*	uuid, appName, err := parseContainerID(req.ContainerId)
-		if err != nil {
-			return nil, err
-		}
+	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
+	if err != nil {
+		return nil, err
+	}
 
-		// TODO(kjackal): decipher this
-		// TODO(yifan): Support timeout.
-		if _, err := r.RunCommand("app", "stop", uuid, "--app="+appName); err != nil {
-			return nil, err
-		}
-	*/
+	_, err = lxdClient.StopContainer(req.ContainerId, true)
+	if err != nil {
+		return nil, err
+	}
+
 	return &runtimeApi.StopContainerResponse{}, nil
 }
 
@@ -240,18 +224,16 @@ func (r *LxdRuntime) StopContainer(ctx context.Context, req *runtimeApi.StopCont
 func (r *LxdRuntime) RemoveContainer(ctx context.Context, req *runtimeApi.RemoveContainerRequest) (*runtimeApi.RemoveContainerResponse, error) {
 	// Container ID is in the form of "uuid:appName".
 	glog.V(6).Infof("*********** RemoveContainer contained id: ", req.ContainerId)
-	/*
-		uuid, appName, err := parseContainerID(req.ContainerId)
-		if err != nil {
-			return nil, err
-		}
-		// TODO(kjackal): decipher this
+	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
+	if err != nil {
+		return nil, err
+	}
 
-		// TODO(yifan): Support timeout.
-		if _, err := r.RunCommand("app", "rm", uuid, "--app="+appName); err != nil {
-			return nil, err
-		}
-	*/
+	_, err = lxdClient.DeleteContainer(req.ContainerId, true)
+	if err != nil {
+		return nil, err
+	}
+
 	return &runtimeApi.RemoveContainerResponse{}, nil
 }
 
