@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc"
 	"k8s.io/kubernetes/pkg/kubectl/util/logs"
 	"k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	"flag"
 )
 
 type RemoteRuntime struct {
@@ -50,6 +51,9 @@ func NewLxdRemoteRuntime() *RemoteRuntime {
 const defaultUnixSock = "/var/tmp/lxdlet.sock"
 
 func main() {
+	//This is needed to fix glog suffix parse error-> ERROR: logging before flag.Parse:
+	flag.CommandLine.Parse([]string{})
+
 	s := options.NewLxdletServer()
 	s.AddFlags(pflag.CommandLine)
 	logs.InitLogs()
