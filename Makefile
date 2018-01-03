@@ -34,7 +34,13 @@ test: path-setup
 	cd "${PKGPATH}" && \
 	go test ./lxdlet/...
 
+integration:
+	nohup ./bin/lxdlet &
+	sleep 3
+	(cd hack; ./integration-tests.sh)
+	killall lxdlet
+
 clean:
-	rm -rf ./bin/lxdlet ./${GP}
+	rm -rf ./bin/lxdlet ./${GP} ./nohup.out
 
 .PHONY: all test clean
