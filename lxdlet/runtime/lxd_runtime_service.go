@@ -130,6 +130,10 @@ func (r *LxdRuntime) ListContainers(ctx context.Context, req *runtimeApi.ListCon
 		imgSpec := &runtimeApi.ImageSpec{
 			Image: lxcContainer.Config["image.serial"],
 		}
+		metadata := &runtimeApi.ContainerMetadata{
+			Name:    lxcContainer.Name,
+			Attempt: 0,
+		}
 		container := &runtimeApi.Container{
 			//			Annotations:  resp.Status.Annotations,
 			CreatedAt: lxcContainer.CreatedAt.UnixNano(),    // resp.Status.CreatedAt,
@@ -137,9 +141,9 @@ func (r *LxdRuntime) ListContainers(ctx context.Context, req *runtimeApi.ListCon
 			Image:     imgSpec,                              //resp.Status.Image,
 			ImageRef:  lxcContainer.Config["image.release"], //"resp.Status.ImageRef",
 			//			Labels:       resp.Status.Labels,
-			//			Metadata:     resp.Status.Metadata,
-			//			PodSandboxId: p.UUID,
-			State: translateState(lxcContainer.Config["volatile.last_state.power"]),
+			Metadata:     metadata,          //			Metadata:     resp.Status.Metadata,
+			PodSandboxId: lxcContainer.Name, //			PodSandboxId: p.UUID,
+			State:        translateState(lxcContainer.Config["volatile.last_state.power"]),
 		}
 
 		//		if passFilter(container, req.Filter) {
