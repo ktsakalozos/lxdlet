@@ -58,7 +58,7 @@ func main() {
 	exitCh := make(chan os.Signal, 1)
 	signal.Notify(exitCh, syscall.SIGINT, syscall.SIGTERM)
 
-	glog.Info("This lxd CRI server implementation is under heavy develpment.")
+	glog.Info("This lxd CRI server implementation is under heavy development.")
 
 	socketPath := defaultUnixSock
 	defer os.Remove(socketPath)
