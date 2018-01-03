@@ -111,7 +111,7 @@ func (r *LxdRuntime) Version(ctx context.Context, req *runtimeApi.VersionRequest
 // ListContainers lists all running containers
 func (r *LxdRuntime) ListContainers(ctx context.Context, req *runtimeApi.ListContainersRequest) (*runtimeApi.ListContainersResponse, error) {
 	// We assume the containers in data dir are all managed by kubelet.
-	glog.V(6).Infof("*********** ListContainers ")
+	glog.Infof("*********** ListContainers ")
 
 	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
 	if err != nil {
@@ -153,7 +153,7 @@ func (r *LxdRuntime) ListContainers(ctx context.Context, req *runtimeApi.ListCon
 // ContainerStatus return the container status
 func (r *LxdRuntime) ContainerStatus(ctx context.Context, req *runtimeApi.ContainerStatusRequest) (*runtimeApi.ContainerStatusResponse, error) {
 	// Container ID is in the form of "uuid:appName".
-	glog.V(6).Infof("*********** ContainerStatus : ", req.ContainerId)
+	glog.Infof("*********** ContainerStatus : ", req.ContainerId)
 	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
 	if err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func (r *LxdRuntime) ContainerStatus(ctx context.Context, req *runtimeApi.Contai
 // CreateContainer create a container
 func (r *LxdRuntime) CreateContainer(ctx context.Context, req *runtimeApi.CreateContainerRequest) (*runtimeApi.CreateContainerResponse, error) {
 	imageID := req.GetConfig().GetImage().Image
-	glog.V(6).Infof("*********** CreateContainer called with image: ", imageID)
+	glog.Infof("*********** CreateContainer called with image: ", imageID)
 	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
 	if err != nil {
 		return nil, err
@@ -190,7 +190,7 @@ func (r *LxdRuntime) CreateContainer(ctx context.Context, req *runtimeApi.Create
 // StartContainer starts a container
 func (r *LxdRuntime) StartContainer(ctx context.Context, req *runtimeApi.StartContainerRequest) (*runtimeApi.StartContainerResponse, error) {
 	// Container ID is in the form of "uuid:appName".
-	glog.V(6).Infof("*********** StartContainer contained id: ", req.ContainerId)
+	glog.Infof("*********** StartContainer contained id: ", req.ContainerId)
 	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
 	if err != nil {
 		return nil, err
@@ -206,7 +206,7 @@ func (r *LxdRuntime) StartContainer(ctx context.Context, req *runtimeApi.StartCo
 // StopContainer stops a container
 func (r *LxdRuntime) StopContainer(ctx context.Context, req *runtimeApi.StopContainerRequest) (*runtimeApi.StopContainerResponse, error) {
 	// Container ID is in the form of "uuid:appName".
-	glog.V(6).Infof("*********** StopContainer contained id: ", req.ContainerId)
+	glog.Infof("*********** StopContainer contained id: ", req.ContainerId)
 	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
 	if err != nil {
 		return nil, err
@@ -223,7 +223,7 @@ func (r *LxdRuntime) StopContainer(ctx context.Context, req *runtimeApi.StopCont
 // RemoveContainer removes the container
 func (r *LxdRuntime) RemoveContainer(ctx context.Context, req *runtimeApi.RemoveContainerRequest) (*runtimeApi.RemoveContainerResponse, error) {
 	// Container ID is in the form of "uuid:appName".
-	glog.V(6).Infof("*********** RemoveContainer contained id: ", req.ContainerId)
+	glog.Infof("*********** RemoveContainer contained id: ", req.ContainerId)
 	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
 	if err != nil {
 		return nil, err
@@ -247,7 +247,7 @@ func (r *LxdRuntime) UpdateRuntimeConfig(ctx context.Context, req *runtimeApi.Up
 func (r *LxdRuntime) Status(ctx context.Context, req *runtimeApi.StatusRequest) (*runtimeApi.StatusResponse, error) {
 	// TODO: implement
 
-	glog.V(6).Infof("*********** Status")
+	glog.Infof("*********** Status")
 	//Need to copy the consts to get pointers
 	runtimeReady := runtimeApi.RuntimeReady
 	networkReady := runtimeApi.NetworkReady
@@ -378,7 +378,7 @@ func (r *LxdRuntime) RunPodSandbox(ctx context.Context, req *runtimeApi.RunPodSa
 
 // StopPodSandbox stops a pod
 func (r *LxdRuntime) StopPodSandbox(ctx context.Context, req *runtimeApi.StopPodSandboxRequest) (*runtimeApi.StopPodSandboxResponse, error) {
-	glog.V(4).Infof("======= StopPodSandbox %s", req.PodSandboxId)
+	glog.Infof("======= StopPodSandbox %s", req.PodSandboxId)
 	//err := r.stopPodSandbox(ctx, req.PodSandboxId, false)
 	// TODO(kjackal): Stop the container if running on this sandbox
 	return &runtimeApi.StopPodSandboxResponse{}, nil
@@ -386,7 +386,7 @@ func (r *LxdRuntime) StopPodSandbox(ctx context.Context, req *runtimeApi.StopPod
 
 // RemovePodSandbox removes a pod
 func (r *LxdRuntime) RemovePodSandbox(ctx context.Context, req *runtimeApi.RemovePodSandboxRequest) (*runtimeApi.RemovePodSandboxResponse, error) {
-	glog.V(4).Infof("======= RemovePodSandbox %s", req.PodSandboxId)
+	glog.Infof("======= RemovePodSandbox %s", req.PodSandboxId)
 	// Force stop first, per api contract "if there are any running containers in
 	// the sandbox, they must be forcibly terminated
 	//r.stopPodSandbox(ctx, req.PodSandboxId, true)
@@ -397,14 +397,14 @@ func (r *LxdRuntime) RemovePodSandbox(ctx context.Context, req *runtimeApi.Remov
 
 // PodSandboxStatus gets the status of a pod
 func (r *LxdRuntime) PodSandboxStatus(ctx context.Context, req *runtimeApi.PodSandboxStatusRequest) (*runtimeApi.PodSandboxStatusResponse, error) {
-	glog.V(4).Infof("======= PodSandboxStatus %s", req.PodSandboxId)
+	glog.Infof("======= PodSandboxStatus %s", req.PodSandboxId)
 	podStatus := r.getPodStatus(req.PodSandboxId)
 	return &runtimeApi.PodSandboxStatusResponse{Status: podStatus}, nil
 }
 
 // ListPodSandbox lists all pods
 func (r *LxdRuntime) ListPodSandbox(ctx context.Context, req *runtimeApi.ListPodSandboxRequest) (*runtimeApi.ListPodSandboxResponse, error) {
-	glog.V(4).Infof("======= ListPodSandbox")
+	glog.Infof("======= ListPodSandbox")
 	files, err := ioutil.ReadDir(r.lxdDataPath)
 	if err != nil {
 		glog.Error("Failed to list pods.")
