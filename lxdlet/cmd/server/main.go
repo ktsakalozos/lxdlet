@@ -47,7 +47,7 @@ func NewLxdRemoteRuntime() *RemoteRuntime {
 	return f
 }
 
-const defaultUnixSock = "/var/run/lxdlet.sock"
+const defaultUnixSock = "/var/tmp/lxdlet.sock"
 
 func main() {
 	s := options.NewLxdletServer()
