@@ -143,7 +143,7 @@ func (r *LxdRuntime) ListContainers(ctx context.Context, req *runtimeApi.ListCon
 			//			Labels:       resp.Status.Labels,
 			Metadata:     metadata,          //			Metadata:     resp.Status.Metadata,
 			PodSandboxId: lxcContainer.Name, //			PodSandboxId: p.UUID,
-			State:        translateState(lxcContainer.Config["volatile.last_state.power"]),
+			State:        translateState(lxcContainer.Status),
 		}
 
 		//		if passFilter(container, req.Filter) {
