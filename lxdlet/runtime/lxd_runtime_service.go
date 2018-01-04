@@ -319,21 +319,35 @@ func (r *LxdRuntime) getPodPath(podUUID string) string {
 	return strBuffer.String()
 }
 
-func (r *LxdRuntime) getPodStatus(podID string) *runtimeApi.PodSandboxStatus {
+func (r *LxdRuntime) getPodStatus(podID string) (*runtimeApi.PodSandboxStatus, error) {
 	path := r.getPodPath(podID)
 	status := runtimeApi.PodSandboxState_SANDBOX_NOTREADY
 	var createdAt int64
 	if stats, err := os.Stat(path); err == nil {
 		status = runtimeApi.PodSandboxState_SANDBOX_READY
 		var unixStat = stats.Sys().(*syscall.Stat_t)
-		createdAt = unixStat.Ctim.Sec
+		createdAt = unixStat.Ctim.Nano()
+	}
+
+	content, err := ioutil.ReadFile(r.getPodPath(podID))
+	if err != nil {
+		glog.Error("Failed to read the pod creation info.")
+		return nil, err
+	}
+
+	var config runtimeApi.PodSandboxConfig
+	err = proto.Unmarshal(content, &config)
+	if err != nil {
+		glog.Error("Failed to unmasharl snadbox creation request.")
+		return nil, err
 	}
 
 	return &runtimeApi.PodSandboxStatus{
 		Id:        podID,
 		State:     status,
 		CreatedAt: createdAt,
-	}
+		Metadata:  config.GetMetadata(),
+	}, nil
 }
 
 func podSandboxStatusMatchesFilter(sbx *runtimeApi.PodSandboxStatus, filter *runtimeApi.PodSandboxFilter) bool {
@@ -364,8 +378,8 @@ func podSandboxStatusMatchesFilter(sbx *runtimeApi.PodSandboxStatus, filter *run
 // RunPodSandbox creates and starts a Pod
 func (r *LxdRuntime) RunPodSandbox(ctx context.Context, req *runtimeApi.RunPodSandboxRequest) (*runtimeApi.RunPodSandboxResponse, error) {
 	glog.Infof("======= RunPodSandbox ")
-	podUUID := randString(64)
-	serialisedRequest, err := proto.Marshal(req)
+	podUUID := req.GetConfig().GetMetadata().GetUid()
+	serialisedRequest, err := proto.Marshal(req.GetConfig())
 	if err != nil {
 		glog.Error("Failed to masharl snadbox creation request.")
 		return nil, err
@@ -402,7 +416,11 @@ func (r *LxdRuntime) RemovePodSandbox(ctx context.Context, req *runtimeApi.Remov
 // PodSandboxStatus gets the status of a pod
 func (r *LxdRuntime) PodSandboxStatus(ctx context.Context, req *runtimeApi.PodSandboxStatusRequest) (*runtimeApi.PodSandboxStatusResponse, error) {
 	glog.Infof("======= PodSandboxStatus %s", req.PodSandboxId)
-	podStatus := r.getPodStatus(req.PodSandboxId)
+	podStatus, err := r.getPodStatus(req.PodSandboxId)
+	if err != nil {
+		glog.Error("Failed to get pods info.")
+		return nil, err
+	}
 	return &runtimeApi.PodSandboxStatusResponse{Status: podStatus}, nil
 }
 
@@ -418,7 +436,11 @@ func (r *LxdRuntime) ListPodSandbox(ctx context.Context, req *runtimeApi.ListPod
 	sandboxes := make([]*runtimeApi.PodSandbox, 0, len(files))
 	for _, file := range files {
 		podID := file.Name()
-		sandboxStatus := r.getPodStatus(podID)
+		sandboxStatus, err := r.getPodStatus(podID)
+		if err != nil {
+			glog.Error("Failed to get pods info.")
+			return nil, err
+		}
 
 		if !podSandboxStatusMatchesFilter(sandboxStatus, req.GetFilter()) {
 			continue
