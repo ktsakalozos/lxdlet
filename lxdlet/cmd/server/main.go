@@ -22,6 +22,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"flag"
+
 	"github.com/golang/glog"
 	"github.com/ktsakalozos/lxdlet/lxdlet/cmd/server/options"
 	lxdImage "github.com/ktsakalozos/lxdlet/lxdlet/image"
@@ -30,7 +32,6 @@ import (
 	"google.golang.org/grpc"
 	"k8s.io/kubernetes/pkg/kubectl/util/logs"
 	"k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
-	"flag"
 )
 
 type RemoteRuntime struct {

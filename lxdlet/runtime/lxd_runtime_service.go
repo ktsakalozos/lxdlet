@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -349,12 +350,37 @@ func (r *LxdRuntime) getPodStatus(podID string) (*runtimeApi.PodSandboxStatus, e
 		return nil, err
 	}
 
-	return &runtimeApi.PodSandboxStatus{
-		Id:        podID,
-		State:     status,
-		CreatedAt: createdAt,
-		Metadata:  config.GetMetadata(),
-	}, nil
+	var response runtimeApi.PodSandboxStatus
+	response.Id = podID
+	response.State = status
+	response.CreatedAt = createdAt
+	response.Metadata = config.GetMetadata()
+
+	// Try get the IP of the container
+	var network runtimeApi.PodSandboxNetworkStatus
+	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
+	if err == nil {
+		allLxcContainers, err := lxdClient.GetContainers()
+		if err == nil {
+			for _, lxcContainer := range allLxcContainers {
+				if strings.HasPrefix(lxcContainer.Name, podID) {
+					networkState, err := lxdClient.GetContainerState(lxcContainer.Name)
+					if err == nil {
+
+						ip := networkState.Network["eth0"].Addresses[0].Address
+						isIP, err := regexp.MatchString("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$", ip)
+						if err == nil && isIP {
+							network.Ip = ip
+							response.Network = &network
+						}
+					}
+					break
+				}
+			}
+		}
+	}
+
+	return &response, nil
 }
 
 func podSandboxStatusMatchesFilter(sbx *runtimeApi.PodSandboxStatus, filter *runtimeApi.PodSandboxFilter) bool {

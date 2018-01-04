@@ -100,6 +100,16 @@ func (d *lxdDaemon) GetContainer(name string) (*api.Container, error) {
 	return container, nil
 }
 
+func (d *lxdDaemon) GetContainerState(name string) (*api.ContainerState, error) {
+	// Containers
+	container, _, err := d.s.GetContainerState(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return container, nil
+}
+
 func (d *lxdDaemon) StartContainer(name string, wait bool) (*lxd.Operation, error) {
 	reqState := api.ContainerStatePut{
 		Action:  "start",

@@ -1,13 +1,12 @@
 #!/bin/bash
 #
-
 set -x
 
 # echo "******* Version call ******************"
 crictl -r /var/tmp/lxdlet.sock version
 
 # echo "**************** ps *******************"
-crictl --debug -r /var/tmp/lxdlet.sock ps
+crictl -r /var/tmp/lxdlet.sock ps
 
 #echo "******** list sandboxes ***************"
 crictl  -r /var/tmp/lxdlet.sock sandboxes
@@ -30,6 +29,14 @@ crictl  -r /var/tmp/lxdlet.sock start $CONTAINER
 crictl -r /var/tmp/lxdlet.sock ps
 lxc list
 
+#echo "******** details of sandbox ***************"
+crictl  -r /var/tmp/lxdlet.sock inspects $SANDBOX
+
+# Wait for the container to get an IP and retrying
+sleep 5
+crictl -r /var/tmp/lxdlet.sock ps
+crictl  -r /var/tmp/lxdlet.sock inspects $SANDBOX
+lxc list
 
 #echo "******** stop container ***************"
 crictl  -r /var/tmp/lxdlet.sock stop $CONTAINER
