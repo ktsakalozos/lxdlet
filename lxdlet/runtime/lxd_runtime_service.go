@@ -18,9 +18,11 @@ package runtime
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"strings"
 	"syscall"
 	"time"
 
@@ -127,11 +129,15 @@ func (r *LxdRuntime) ListContainers(ctx context.Context, req *runtimeApi.ListCon
 	var containers []*runtimeApi.Container
 	for _, lxcContainer := range allLxcContainers {
 
+		if strings.Index(lxcContainer.Name, "-") < 0 {
+			// This is not an container we created
+			continue
+		}
 		imgSpec := &runtimeApi.ImageSpec{
 			Image: lxcContainer.Config["image.serial"],
 		}
 		metadata := &runtimeApi.ContainerMetadata{
-			Name:    lxcContainer.Name,
+			Name:    strings.SplitN(lxcContainer.Name, "-", 2)[1],
 			Attempt: 0,
 		}
 		container := &runtimeApi.Container{
@@ -178,17 +184,18 @@ func (r *LxdRuntime) ContainerStatus(ctx context.Context, req *runtimeApi.Contai
 // CreateContainer create a container
 func (r *LxdRuntime) CreateContainer(ctx context.Context, req *runtimeApi.CreateContainerRequest) (*runtimeApi.CreateContainerResponse, error) {
 	imageID := req.GetConfig().GetImage().Image
-	glog.Infof("*********** CreateContainer called with image: ", imageID)
+	glog.Infof("*********** CreateContainer called with image: %s", imageID)
 	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = lxdClient.CreateContainer(req.PodSandboxId, true)
+	containerID := fmt.Sprintf("%s-%s", req.PodSandboxId, req.GetConfig().GetMetadata().GetName())
+	_, err = lxdClient.CreateContainer(containerID, imageID, true)
 	if err != nil {
 		return nil, err
 	}
-	return &runtimeApi.CreateContainerResponse{ContainerId: req.PodSandboxId}, nil
+	return &runtimeApi.CreateContainerResponse{ContainerId: containerID}, nil
 }
 
 // StartContainer starts a container

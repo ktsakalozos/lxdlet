@@ -19,9 +19,9 @@ package image
 import (
 	"sync"
 
-	"k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
+	"k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
 
 type LxdImageService struct {
@@ -52,7 +52,7 @@ func (s *LxdImageService) ImageStatus(ctx context.Context, req *runtime.ImageSta
 
 // ListImages lists images in the store
 func (s *LxdImageService) ListImages(ctx context.Context, req *runtime.ListImagesRequest) (*runtime.ListImagesResponse, error) {
-	glog.V(6).Infof("*********** ListImages", )
+	glog.V(6).Infof("*********** ListImages")
 	return &runtime.ListImagesResponse{Images: nil}, nil
 }
 
@@ -64,6 +64,6 @@ func (s *LxdImageService) PullImage(ctx context.Context, req *runtime.PullImageR
 	}, nil
 }
 
-func (s *LxdImageService) ImageFsInfo(context.Context, *runtime.ImageFsInfoRequest) (*runtime.ImageFsInfoResponse, error){
+func (s *LxdImageService) ImageFsInfo(context.Context, *runtime.ImageFsInfoRequest) (*runtime.ImageFsInfoResponse, error) {
 	return nil, nil
 }

@@ -1,6 +1,6 @@
 {
     "metadata": {
-        "name": "nginx-sandbox",
+        "name": "test-sandbox",
         "namespace": "default",
         "attempt": 1,
         "uid": "hdishd83djaidwnduwk28bcsb"

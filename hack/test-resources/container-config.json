@@ -1,9 +1,9 @@
 {
   "metadata": {
-      "name": "busybox"
+      "name": "test-xenial"
   },
   "image":{
-      "image": "busybox"
+      "image": "ubuntu/xenial"
   },
   "command": [
       "top"

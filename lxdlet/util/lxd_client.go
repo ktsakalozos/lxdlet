@@ -62,13 +62,13 @@ func (d *lxdDaemon) GetContainers() ([]api.Container, error) {
 	return containers, nil
 }
 
-func (d *lxdDaemon) CreateContainer(name string, wait bool) (*lxd.Operation, error) {
+func (d *lxdDaemon) CreateContainer(name string, image string, wait bool) (*lxd.Operation, error) {
 	// Container creation request
 	req := api.ContainersPost{
 		Name: name,
 		Source: api.ContainerSource{
 			Type:     "image",
-			Alias:    "ubuntu/xenial",
+			Alias:    image,
 			Server:   "https://images.linuxcontainers.org",
 			Protocol: "simplestreams",
 		},

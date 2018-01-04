@@ -13,38 +13,40 @@ crictl --debug -r /var/tmp/lxdlet.sock ps
 crictl  -r /var/tmp/lxdlet.sock sandboxes
 
 #echo "******** add sandbox ***************"
-crictl  -r /var/tmp/lxdlet.sock runs test-resources/sandbox-config.json
+SANDBOX=$(crictl  -r /var/tmp/lxdlet.sock runs test-resources/sandbox-config.json)
+echo "Sandbox created: " $SANDBOX
 
 #echo "******** list sandboxes ***************"
 crictl  -r /var/tmp/lxdlet.sock sandboxes
 
 #echo "******** create contaner ***************"
-crictl  -r /var/tmp/lxdlet.sock create integrationtestcontaner test-resources/container-config.json test-resources/sandbox-config.json
+CONTAINER=$(crictl  -r /var/tmp/lxdlet.sock create $SANDBOX test-resources/container-config.json test-resources/sandbox-config.json)
+echo "Container created: " $CONTAINER
 crictl -r /var/tmp/lxdlet.sock ps
 lxc list
 
 #echo "******** start ***************"
-crictl  -r /var/tmp/lxdlet.sock start integrationtestcontaner
+crictl  -r /var/tmp/lxdlet.sock start $CONTAINER
 crictl -r /var/tmp/lxdlet.sock ps
 lxc list
 
 
 #echo "******** stop container ***************"
-crictl  -r /var/tmp/lxdlet.sock stop integrationtestcontaner
+crictl  -r /var/tmp/lxdlet.sock stop $CONTAINER
 crictl -r /var/tmp/lxdlet.sock ps
 lxc list
 
 #echo "******** rm container ***************"
-crictl  -r /var/tmp/lxdlet.sock rm integrationtestcontaner
+crictl  -r /var/tmp/lxdlet.sock rm $CONTAINER
 crictl -r /var/tmp/lxdlet.sock ps
 lxc list
 
 #echo "******** stop sandbox ***************"
-crictl  -r /var/tmp/lxdlet.sock stops hdishd83djaidwnduwk28bcsb
+crictl  -r /var/tmp/lxdlet.sock stops $SANDBOX
 crictl -r /var/tmp/lxdlet.sock ps
 lxc list
 
 #echo "******** rm sandbox ***************"
-crictl  -r /var/tmp/lxdlet.sock rms hdishd83djaidwnduwk28bcsb
+crictl  -r /var/tmp/lxdlet.sock rms $SANDBOX
 crictl -r /var/tmp/lxdlet.sock ps
 lxc list
