@@ -24,6 +24,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
 
+// LxdImageService holds the implementation of the images repo
 type LxdImageService struct {
 	sync.Mutex
 
@@ -31,39 +32,40 @@ type LxdImageService struct {
 	Called        []string
 }
 
-// NewImageStore creates an image storage that allows CRUD operations for images.
+// NewLxdImageService creates an image storage that allows CRUD operations for images.
 func NewLxdImageService() runtime.ImageServiceServer {
 	return &LxdImageService{}
 }
 
-// Remove removes the image from the image store.
+// RemoveImage removes the image from the image store.
 func (s *LxdImageService) RemoveImage(ctx context.Context, req *runtime.RemoveImageRequest) (*runtime.RemoveImageResponse, error) {
+	glog.Infof("+++++++ RemoveImage ")
 	return &runtime.RemoveImageResponse{}, nil
 }
 
 // ImageStatus returns the status of the image.
-// TODO(euank): rkt should support listing a single image so this is more
-// efficient
 func (s *LxdImageService) ImageStatus(ctx context.Context, req *runtime.ImageStatusRequest) (*runtime.ImageStatusResponse, error) {
-
+	glog.Infof("+++++++ ImageStatus ")
 	// api expected response for "Image does not exist"
 	return &runtime.ImageStatusResponse{}, nil
 }
 
 // ListImages lists images in the store
 func (s *LxdImageService) ListImages(ctx context.Context, req *runtime.ListImagesRequest) (*runtime.ListImagesResponse, error) {
-	glog.V(6).Infof("*********** ListImages")
+	glog.Infof("+++++++ ListImages ")
 	return &runtime.ListImagesResponse{Images: nil}, nil
 }
 
 // PullImage pulls an image into the store
 func (s *LxdImageService) PullImage(ctx context.Context, req *runtime.PullImageRequest) (*runtime.PullImageResponse, error) {
-	glog.V(6).Infof("*********** PullImage", req.Image.Image)
+	glog.Infof("+++++++ PullImage ")
 	return &runtime.PullImageResponse{
 		ImageRef: "",
 	}, nil
 }
 
+// ImageFsInfo gets the info os an image
 func (s *LxdImageService) ImageFsInfo(context.Context, *runtime.ImageFsInfoRequest) (*runtime.ImageFsInfoResponse, error) {
-	return nil, nil
+	glog.Infof("+++++++ ImageFsInfo ")
+	return &runtime.ImageFsInfoResponse{ImageFilesystems: nil}, nil
 }
