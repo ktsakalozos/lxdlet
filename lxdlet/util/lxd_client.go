@@ -64,6 +64,7 @@ func (d *lxdDaemon) GetContainers() ([]api.Container, error) {
 
 func (d *lxdDaemon) CreateContainer(name string, image string, wait bool) (*lxd.Operation, error) {
 	// Container creation request
+	// TODO(kjackal): Kubernetes probably pulled the image localy first
 	req := api.ContainersPost{
 		Name: name,
 		Source: api.ContainerSource{
@@ -167,4 +168,103 @@ func (d *lxdDaemon) DeleteContainer(name string, wait bool) (*lxd.Operation, err
 	}
 
 	return op, nil
+}
+
+func (d *lxdDaemon) ListImages() ([]api.Image, error) {
+	// Containers
+	// Connect to the remote SimpleStreams server
+	remote, err := lxd.ConnectSimpleStreams("https://images.linuxcontainers.org", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	images, err := remote.GetImages()
+	if err != nil {
+		return nil, err
+	}
+
+	return images, nil
+}
+
+func (d *lxdDaemon) PullImage(imageName string, wait bool) (*lxd.RemoteOperation, error) {
+	// Connect to the remote SimpleStreams server
+	remote, err := lxd.ConnectSimpleStreams("https://images.linuxcontainers.org", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	alias, _, err := remote.GetImageAlias(imageName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the image information
+	image, _, err := remote.GetImage(alias.Target)
+	if err != nil {
+		return nil, err
+	}
+
+	args := &lxd.ImageCopyArgs{
+		Aliases: image.Aliases,
+	}
+	// Ask LXD to copy the image from the remote server
+	op, err := d.s.CopyImage(remote, *image, args)
+	if err != nil {
+		return nil, err
+	}
+
+	// And wait for it to finish
+	if wait {
+		err = op.Wait()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return op, nil
+}
+
+func (d *lxdDaemon) DeleteImage(imageName string, wait bool) (*lxd.Operation, error) {
+	// Get the image information
+	alias, _, err := d.s.GetImageAlias(imageName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the image information
+	image, _, err := d.s.GetImage(alias.Target)
+	if err != nil {
+		return nil, err
+	}
+
+	op, err := d.s.DeleteImage(image.Fingerprint)
+	if err != nil {
+		return nil, err
+	}
+	// And wait for it to finish
+	if wait {
+		err = op.Wait()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return op, nil
+
+}
+
+func (d *lxdDaemon) StatImage(imageName string) (*api.Image, error) {
+	// Get the image information
+	alias, _, err := d.s.GetImageAlias(imageName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the image information
+	image, _, err := d.s.GetImage(alias.Target)
+	if err != nil {
+		return nil, err
+	}
+
+	return image, nil
 }

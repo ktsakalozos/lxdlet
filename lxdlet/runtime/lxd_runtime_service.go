@@ -179,21 +179,40 @@ func (r *LxdRuntime) ContainerStatus(ctx context.Context, req *runtimeApi.Contai
 	var status runtimeApi.ContainerStatus
 	status.Id = req.ContainerId
 	status.State = translateState(container.Status)
+	metadata := &runtimeApi.ContainerMetadata{
+		Name:    strings.SplitN(container.Name, "-", 2)[1],
+		Attempt: 0,
+	}
+	status.CreatedAt = container.CreatedAt.UnixNano()
+	status.Metadata = metadata
+	imgSpec := &runtimeApi.ImageSpec{
+		Image: container.Config["image.serial"],
+	}
+	status.Image = imgSpec
+	status.ImageRef = container.Config["image.release"]
 	return &runtimeApi.ContainerStatusResponse{Status: &status}, nil
 }
 
 // CreateContainer create a container
 func (r *LxdRuntime) CreateContainer(ctx context.Context, req *runtimeApi.CreateContainerRequest) (*runtimeApi.CreateContainerResponse, error) {
 	imageID := req.GetConfig().GetImage().Image
+	if strings.HasPrefix(imageID, "docker.io") {
+		imageID = strings.SplitN(imageID, "/", 2)[1]
+		imageID = strings.Replace(imageID, ":latest", "", 1)
+	}
+
 	glog.Infof("*********** CreateContainer called with image: %s", imageID)
 	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
 	if err != nil {
 		return nil, err
 	}
 
-	containerID := fmt.Sprintf("%s-%s", req.PodSandboxId, req.GetConfig().GetMetadata().GetName())
+	podPrefix := strings.Split(req.PodSandboxId, "-")[0]
+	containerID := fmt.Sprintf("pod-%s-%s", podPrefix, req.GetConfig().GetMetadata().GetName())
+	glog.Infof("*********** CreateContainer calling lxd with %s, %s", containerID, imageID)
 	_, err = lxdClient.CreateContainer(containerID, imageID, true)
 	if err != nil {
+		glog.Errorf("CreateContainer failed to create container %s from image %s. Error msg: %s", containerID, imageID, err)
 		return nil, err
 	}
 	return &runtimeApi.CreateContainerResponse{ContainerId: containerID}, nil
@@ -365,7 +384,7 @@ func (r *LxdRuntime) getPodStatus(podID string) (*runtimeApi.PodSandboxStatus, e
 			for _, lxcContainer := range allLxcContainers {
 				if strings.HasPrefix(lxcContainer.Name, podID) {
 					networkState, err := lxdClient.GetContainerState(lxcContainer.Name)
-					if err == nil {
+					if err == nil && len(networkState.Network) > 0 {
 
 						ip := networkState.Network["eth0"].Addresses[0].Address
 						isIP, err := regexp.MatchString("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$", ip)
@@ -432,6 +451,7 @@ func (r *LxdRuntime) StopPodSandbox(ctx context.Context, req *runtimeApi.StopPod
 	glog.Infof("======= StopPodSandbox %s", req.PodSandboxId)
 	//err := r.stopPodSandbox(ctx, req.PodSandboxId, false)
 	// TODO(kjackal): Stop the container if running on this sandbox
+	os.Remove(r.getPodPath(req.PodSandboxId))
 	return &runtimeApi.StopPodSandboxResponse{}, nil
 }
 
@@ -454,6 +474,7 @@ func (r *LxdRuntime) PodSandboxStatus(ctx context.Context, req *runtimeApi.PodSa
 		glog.Error("Failed to get pods info.")
 		return nil, err
 	}
+	glog.Infof("-----------------> Metadata: %s %s", podStatus.GetMetadata().GetName(), podStatus.Metadata.GetNamespace())
 	return &runtimeApi.PodSandboxStatusResponse{Status: podStatus}, nil
 }
 

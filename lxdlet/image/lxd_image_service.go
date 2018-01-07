@@ -17,9 +17,11 @@ limitations under the License.
 package image
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/golang/glog"
+	"github.com/ktsakalozos/lxdlet/lxdlet/util"
 	"golang.org/x/net/context"
 	"k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
@@ -40,6 +42,16 @@ func NewLxdImageService() runtime.ImageServiceServer {
 // RemoveImage removes the image from the image store.
 func (s *LxdImageService) RemoveImage(ctx context.Context, req *runtime.RemoveImageRequest) (*runtime.RemoveImageResponse, error) {
 	glog.Infof("+++++++ RemoveImage ")
+	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
+	if err != nil {
+		return nil, err
+	}
+
+	image := req.GetImage().GetImage()
+	_, err = lxdClient.DeleteImage(image, true)
+	if err != nil {
+		return nil, err
+	}
 	return &runtime.RemoveImageResponse{}, nil
 }
 
@@ -53,19 +65,54 @@ func (s *LxdImageService) ImageStatus(ctx context.Context, req *runtime.ImageSta
 // ListImages lists images in the store
 func (s *LxdImageService) ListImages(ctx context.Context, req *runtime.ListImagesRequest) (*runtime.ListImagesResponse, error) {
 	glog.Infof("+++++++ ListImages ")
+	lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
+	if err != nil {
+		return nil, err
+	}
+
+	lxcimages, err := lxdClient.ListImages()
+	if err != nil {
+		return nil, err
+	}
+
+	var images []*runtime.Image
+	for _, lxcImage := range lxcimages {
+		if len(lxcImage.Aliases) == 0 {
+			continue
+		}
+		image := &runtime.Image{
+			Id: lxcImage.Aliases[0].Name,
+		}
+
+		images = append(images, image)
+	}
+
 	return &runtime.ListImagesResponse{Images: nil}, nil
 }
 
 // PullImage pulls an image into the store
 func (s *LxdImageService) PullImage(ctx context.Context, req *runtime.PullImageRequest) (*runtime.PullImageResponse, error) {
-	glog.Infof("+++++++ PullImage ")
+	image := req.GetImage().GetImage()
+	glog.Infof("+++++++ PullImage %s", image)
+	/*
+		// Do not pull any images. Create container should pull the image.
+		lxdClient, err := util.NewLxdClient("/var/snap/lxd/common/lxd")
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = lxdClient.PullImage(image, true)
+		if err != nil {
+			return nil, err
+		}
+	*/
 	return &runtime.PullImageResponse{
-		ImageRef: "",
+		ImageRef: image,
 	}, nil
 }
 
 // ImageFsInfo gets the info os an image
 func (s *LxdImageService) ImageFsInfo(context.Context, *runtime.ImageFsInfoRequest) (*runtime.ImageFsInfoResponse, error) {
 	glog.Infof("+++++++ ImageFsInfo ")
-	return &runtime.ImageFsInfoResponse{ImageFilesystems: nil}, nil
+	return nil, fmt.Errorf("not implemented")
 }
